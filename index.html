@@ -46,7 +46,7 @@
         }
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 10px;
             margin-bottom: 20px;
         }
@@ -330,6 +330,10 @@
                 <div>Places vendues</div>
             </div>
             <div class="stat-card">
+                <div class="stat-value" id="lostMatches">0</div>
+                <div>Places perdues</div>
+            </div>
+            <div class="stat-card">
                 <div class="stat-value" id="averagePrice">0€</div>
                 <div>Prix moyen/vente</div>
             </div>
@@ -337,7 +341,7 @@
 
         <div class="legend">
             <div class="legend-item">
-                <div class="legend-color" style="background: linear-gradient(90deg, #00704a 50%, #ffcc00 50%);"></div>
+                <div class="legend-color" style="background-color: #ec4899;"></div>
                 <span>Ligue 1</span>
             </div>
             <div class="legend-item">
@@ -582,8 +586,8 @@
             // Ajouter la classe selon la compétition avec fond coloré
             if (competition === 'Ligue 1') {
                 row.classList.add('match-ligue1');
-                row.style.background = 'linear-gradient(90deg, rgba(0, 112, 74, 0.15) 0%, rgba(255, 204, 0, 0.15) 100%)';
-                row.style.borderLeft = '4px solid #00704a';
+                row.style.background = 'rgba(236, 72, 153, 0.1)'; // Rose
+                row.style.borderLeft = '4px solid #ec4899';
             }
             if (competition === 'Ligue des Champions') {
                 row.classList.add('match-ucl');
@@ -631,6 +635,7 @@
             let totalRevenue = 0;
             let attendedCount = 0;
             let soldCount = 0;
+            let lostCount = 0; // Places perdues
             let totalSalesAmount = 0;
             
             console.log('Nombre de lignes trouvées:', rows.length);
@@ -638,8 +643,8 @@
             rows.forEach((row, index) => {
                 try {
                     const revenueElement = row.querySelector('td:nth-child(6)');
-                    const attendedElement = row.querySelector('td:nth-child(5) select'); // Plus précis
-                    const priceElement = row.querySelector('td:nth-child(4) input'); // Prix saisi
+                    const attendedElement = row.querySelector('td:nth-child(5) select');
+                    const priceElement = row.querySelector('td:nth-child(4) input');
                     
                     if (revenueElement && attendedElement && priceElement) {
                         const revenue = parseFloat(revenueElement.textContent.replace('€', '').trim()) || 0;
@@ -659,11 +664,14 @@
                             attendedCount++;
                             console.log('Match assisté trouvé');
                         } else if (attended === 'Non') {
-                            soldCount++;
                             if (price > 0) {
+                                soldCount++;
                                 totalSalesAmount += price;
+                                console.log('Place vendue trouvée, prix:', price);
+                            } else {
+                                lostCount++;
+                                console.log('Place perdue trouvée (prix = 0)');
                             }
-                            console.log('Place vendue trouvée, prix:', price);
                         }
                     } else {
                         console.log(`Ligne ${index + 1}: éléments manquants`, {
@@ -684,6 +692,7 @@
                 totalRevenue,
                 attendedCount,
                 soldCount,
+                lostCount,
                 totalSalesAmount,
                 averagePrice
             });
@@ -694,6 +703,7 @@
                 'netResult': netResult + '€',
                 'attendedMatches': attendedCount.toString(),
                 'soldMatches': soldCount.toString(),
+                'lostMatches': lostCount.toString(),
                 'averagePrice': averagePrice + '€'
             };
             
@@ -731,26 +741,36 @@
             const profitabilityRate = Math.round((totalRevenue / 1680) * 100);
             
             // Répartition par compétition
-            let ligue1Count = 0, ligue1Attended = 0, ligue1Sold = 0;
-            let uclCount = 0, uclAttended = 0, uclSold = 0;
-            let coupeCount = 0, coupeAttended = 0, coupeSold = 0;
+            let ligue1Count = 0, ligue1Attended = 0, ligue1Sold = 0, ligue1Lost = 0;
+            let uclCount = 0, uclAttended = 0, uclSold = 0, uclLost = 0;
+            let coupeCount = 0, coupeAttended = 0, coupeSold = 0, coupeLost = 0;
             
             rows.forEach(row => {
                 const competition = row.querySelector('select:nth-of-type(1)').value;
                 const attended = row.querySelector('select:last-of-type').value;
+                const price = parseFloat(row.querySelector('input[type="number"]').value) || 0;
                 
                 if (competition === 'Ligue 1') {
                     ligue1Count++;
                     if (attended === 'Oui') ligue1Attended++;
-                    if (attended === 'Non') ligue1Sold++;
+                    else if (attended === 'Non') {
+                        if (price > 0) ligue1Sold++;
+                        else ligue1Lost++;
+                    }
                 } else if (competition === 'Ligue des Champions') {
                     uclCount++;
                     if (attended === 'Oui') uclAttended++;
-                    if (attended === 'Non') uclSold++;
+                    else if (attended === 'Non') {
+                        if (price > 0) uclSold++;
+                        else uclLost++;
+                    }
                 } else if (competition === 'Coupe de France') {
                     coupeCount++;
                     if (attended === 'Oui') coupeAttended++;
-                    if (attended === 'Non') coupeSold++;
+                    else if (attended === 'Non') {
+                        if (price > 0) coupeSold++;
+                        else coupeLost++;
+                    }
                 }
             });
             
@@ -758,13 +778,13 @@
                 <p><strong>📈 Rentabilité:</strong> ${profitabilityRate}% (${totalRevenue}€ / 1680€)</p>
                 <p><strong>💰 Résultat net:</strong> ${netResult >= 0 ? '+' : ''}${netResult}€</p>
                 <p><strong>🎫 Coût par match assisté:</strong> ${costPerAttendedMatch > 0 ? costPerAttendedMatch : 0}€</p>
-                <p><strong>📊 Répartition:</strong> ${attendedCount} matchs assistés, ${soldCount} places vendues</p>
+                <p><strong>📊 Répartition:</strong> ${attendedCount} assistés, ${soldCount} vendues, ${lostCount} perdues</p>
                 <p><strong>💵 Prix moyen de vente:</strong> ${averagePrice}€</p>
                 
                 <p style="margin-top: 15px;"><strong>🏆 Par compétition:</strong></p>
-                <p style="margin-left: 10px;">🟢🟡 <strong>Ligue 1:</strong> ${ligue1Count} matchs (${ligue1Attended} assistés, ${ligue1Sold} vendus)</p>
-                <p style="margin-left: 10px;">🔵 <strong>Ligue des Champions:</strong> ${uclCount} matchs (${uclAttended} assistés, ${uclSold} vendus)</p>
-                <p style="margin-left: 10px;">🔴 <strong>Coupe de France:</strong> ${coupeCount} matchs (${coupeAttended} assistés, ${coupeSold} vendus)</p>
+                <p style="margin-left: 10px;">🌸 <strong>Ligue 1:</strong> ${ligue1Count} matchs (${ligue1Attended} assistés, ${ligue1Sold} vendus, ${ligue1Lost} perdus)</p>
+                <p style="margin-left: 10px;">🔵 <strong>Ligue des Champions:</strong> ${uclCount} matchs (${uclAttended} assistés, ${uclSold} vendus, ${uclLost} perdus)</p>
+                <p style="margin-left: 10px;">🔴 <strong>Coupe de France:</strong> ${coupeCount} matchs (${coupeAttended} assistés, ${coupeSold} vendus, ${coupeLost} perdus)</p>
             `;
             
             if (netResult >= 0) {
