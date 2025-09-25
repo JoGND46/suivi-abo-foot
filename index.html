@@ -322,6 +322,10 @@
                 <div>Résultat net</div>
             </div>
             <div class="stat-card">
+                <div class="stat-value" id="averagePrice">0€</div>
+                <div>Prix moyen/vente</div>
+            </div>
+            <div class="stat-card">
                 <div class="stat-value" id="attendedMatches">0</div>
                 <div>Matchs assistés</div>
             </div>
@@ -332,10 +336,6 @@
             <div class="stat-card">
                 <div class="stat-value" id="lostMatches">0</div>
                 <div>Places perdues</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="averagePrice">0€</div>
-                <div>Prix moyen/vente</div>
             </div>
         </div>
 
@@ -731,11 +731,12 @@
                 return;
             }
             
-            const totalRevenue = parseFloat(document.getElementById('totalRevenue').textContent) || 0;
+            const totalRevenue = parseFloat(document.getElementById('totalRevenue').textContent.replace('€', '')) || 0;
             const netResult = totalRevenue - 1680;
             const attendedCount = parseInt(document.getElementById('attendedMatches').textContent) || 0;
             const soldCount = parseInt(document.getElementById('soldMatches').textContent) || 0;
-            const averagePrice = parseInt(document.getElementById('averagePrice').textContent) || 0;
+            const lostCount = parseInt(document.getElementById('lostMatches').textContent) || 0;
+            const averagePrice = parseInt(document.getElementById('averagePrice').textContent.replace('€', '')) || 0;
             
             const costPerAttendedMatch = attendedCount > 0 ? Math.round((1680 - totalRevenue) / attendedCount) : 0;
             const profitabilityRate = Math.round((totalRevenue / 1680) * 100);
@@ -746,31 +747,41 @@
             let coupeCount = 0, coupeAttended = 0, coupeSold = 0, coupeLost = 0;
             
             rows.forEach(row => {
-                const competition = row.querySelector('select:nth-of-type(1)').value;
-                const attended = row.querySelector('select:last-of-type').value;
-                const price = parseFloat(row.querySelector('input[type="number"]').value) || 0;
-                
-                if (competition === 'Ligue 1') {
-                    ligue1Count++;
-                    if (attended === 'Oui') ligue1Attended++;
-                    else if (attended === 'Non') {
-                        if (price > 0) ligue1Sold++;
-                        else ligue1Lost++;
+                try {
+                    const competitionSelect = row.querySelector('td:nth-child(3) select');
+                    const attendedSelect = row.querySelector('td:nth-child(5) select');
+                    const priceInput = row.querySelector('td:nth-child(4) input');
+                    
+                    if (competitionSelect && attendedSelect && priceInput) {
+                        const competition = competitionSelect.value;
+                        const attended = attendedSelect.value;
+                        const price = parseFloat(priceInput.value) || 0;
+                        
+                        if (competition === 'Ligue 1') {
+                            ligue1Count++;
+                            if (attended === 'Oui') ligue1Attended++;
+                            else if (attended === 'Non') {
+                                if (price > 0) ligue1Sold++;
+                                else ligue1Lost++;
+                            }
+                        } else if (competition === 'Ligue des Champions') {
+                            uclCount++;
+                            if (attended === 'Oui') uclAttended++;
+                            else if (attended === 'Non') {
+                                if (price > 0) uclSold++;
+                                else uclLost++;
+                            }
+                        } else if (competition === 'Coupe de France') {
+                            coupeCount++;
+                            if (attended === 'Oui') coupeAttended++;
+                            else if (attended === 'Non') {
+                                if (price > 0) coupeSold++;
+                                else coupeLost++;
+                            }
+                        }
                     }
-                } else if (competition === 'Ligue des Champions') {
-                    uclCount++;
-                    if (attended === 'Oui') uclAttended++;
-                    else if (attended === 'Non') {
-                        if (price > 0) uclSold++;
-                        else uclLost++;
-                    }
-                } else if (competition === 'Coupe de France') {
-                    coupeCount++;
-                    if (attended === 'Oui') coupeAttended++;
-                    else if (attended === 'Non') {
-                        if (price > 0) coupeSold++;
-                        else coupeLost++;
-                    }
+                } catch (e) {
+                    console.log('Erreur analyse ligne:', e);
                 }
             });
             
@@ -801,6 +812,7 @@
                 analysis += `<p>• Ou vendre une place à <strong>${remainingAmount}€</strong> pour rentabiliser d'un coup</p>`;
             }
             
+            console.log('Analysis HTML:', analysis);
             document.getElementById('analysis').innerHTML = analysis;
         }
 
