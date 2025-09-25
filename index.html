@@ -1,96 +1,4 @@
-function updateAnalysis() {
-            const rows = document.querySelectorAll('#matchTable tbody tr');
-            const totalMatches = rows.length;
-            
-            if (totalMatches === 0) {
-                document.getElementById('analysis').innerHTML = '<p>Ajoutez des matchs pour voir l\'analyse détaillée de votre abonnement.</p>';
-                return;
-            }
-            
-            const totalRevenue = parseFloat(document.getElementById('totalRevenue').textContent.replace('€', '')) || 0;
-            const netResult = totalRevenue - 1680;
-            const attendedCount = parseInt(document.getElementById('attendedMatches').textContent) || 0;
-            const soldCount = parseInt(document.getElementById('soldMatches').textContent) || 0;
-            const lostCount = parseInt(document.getElementById('lostMatches').textContent) || 0;
-            const averagePrice = parseInt(document.getElementById('averagePrice').textContent.replace('€', '')) || 0;
-            
-            const costPerAttendedMatch = attendedCount > 0 ? Math.round((1680 - totalRevenue) / attendedCount) : 0;
-            const profitabilityRate = Math.round((totalRevenue / 1680) * 100);
-            
-            // Répartition par compétition
-            let ligue1Count = 0, ligue1Attended = 0, ligue1Sold = 0, ligue1Lost = 0;
-            let uclCount = 0, uclAttended = 0, uclSold = 0, uclLost = 0;
-            let coupeCount = 0, coupeAttended = 0, coupeSold = 0, coupeLost = 0;
-            
-            rows.forEach(row => {
-                try {
-                    const competitionSelect = row.querySelector('td:nth-child(2) select');
-                    const attendedSelect = row.querySelector('td:nth-child(4) select');
-                    const priceInput = row.querySelector('td:nth-child(3) input');
-                    
-                    if (competitionSelect && attendedSelect && priceInput) {
-                        const competition = competitionSelect.value;
-                        const attended = attendedSelect.value;
-                        const price = parseFloat(priceInput.value) || 0;
-                        
-                        if (competition === 'Ligue 1') {
-                            ligue1Count++;
-                            if (attended === 'Oui') ligue1Attended++;
-                            else if (attended === 'Non') {
-                                if (price > 0) ligue1Sold++;
-                                else ligue1Lost++;
-                            }
-                        } else if (competition === 'Ligue des Champions') {
-                            uclCount++;
-                            if (attended === 'Oui') uclAttended++;
-                            else if (attended === 'Non') {
-                                if (price > 0) uclSold++;
-                                else uclLost++;
-                            }
-                        } else if (competition === 'Coupe de France') {
-                            coupeCount++;
-                            if (attended === 'Oui') coupeAttended++;
-                            else if (attended === 'Non') {
-                                if (price > 0) coupeSold++;
-                                else coupeLost++;
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.log('Erreur analyse ligne:', e);
-                }
-            });
-            
-            let analysis = `
-                <p><strong>📈 Rentabilité:</strong> ${profitabilityRate}% (${totalRevenue}€ / 1680€)</p>
-                <p><strong>💰 Résultat net:</strong> ${netResult >= 0 ? '+' : ''}${netResult}€</p>
-                <p><strong>🎫 Coût par match assisté:</strong> ${costPerAttendedMatch > 0 ? costPerAttendedMatch : 0}€</p>
-                <p><strong>📊 Répartition:</strong> ${attendedCount} assistés, ${soldCount} vendues, ${lostCount} perdues</p>
-                <p><strong>💵 Prix moyen de vente:</strong> ${averagePrice}€</p>
-                
-                <p style="margin-top: 15px;"><strong>🏆 Par compétition:</strong></p>
-                <p style="margin-left: 10px;">🌸 <strong>Ligue 1:</strong> ${ligue1Count} matchs (${ligue1Attended} assistés, ${ligue1Sold} vendus, ${ligue1Lost} perdus)</p>
-                <p style="margin-left: 10px;">🔵 <strong>Ligue des Champions:</strong> ${uclCount} matchs (${uclAttended} assistés, ${uclSold} vendus, ${uclLost} perdus)</p>
-                <p style="margin-left: 10px;">🔴 <strong>Coupe de France:</strong> ${coupeCount} matchs (${coupeAttended} assistés, ${coupeSold} vendus, ${coupeLost} perdus)</p>
-            `;
-            
-            if (netResult >= 0) {
-                analysis += '<p style="color: #059669; margin-top: 15px;"><strong>🎉 Félicitations ! Votre abonnement est rentabilisé.</strong></p>';
-            } else {
-                const remainingAmount = Math.abs(netResult);
-                const additionalSalesNeeded = averagePrice > 0 ? Math.ceil(remainingAmount / averagePrice) : 0;
-                
-                analysis += `<p style="color: #dc2626; margin-top: 15px;"><strong>📊 Pour rentabiliser complètement :</strong></p>`;
-                analysis += `<p>• Montant restant à récupérer: <strong>${remainingAmount}€</strong></p>`;
-                if (averagePrice > 0) {
-                    analysis += `<p>• Au prix moyen de vos ventes (${averagePrice}€), il faudrait vendre <strong>${additionalSalesNeeded} places supplémentaires</strong></p>`;
-                }
-                analysis += `<p>• Ou vendre une place à <strong>${remainingAmount}€</strong> pour rentabiliser d'un coup</p>`;
-            }
-            
-            console.log('Analysis HTML:', analysis);
-            document.getElementById('analysis').innerHTML = analysis;
-        }<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -165,6 +73,76 @@ function updateAnalysis() {
             line-height: 1.2;
         }
         
+        .add-match {
+            background: linear-gradient(135deg, #059669, #047857);
+            color: white;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            margin-bottom: 15px;
+            font-size: 16px;
+            box-shadow: 0 3px 12px rgba(5, 150, 105, 0.3);
+            touch-action: manipulation;
+        }
+        
+        .controls-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        
+        .controls-row button {
+            flex: 1;
+            padding: 8px 2px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 9px;
+            font-weight: 500;
+            cursor: pointer;
+            touch-action: manipulation;
+            min-height: 36px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        
+        .export-btn { background: #004170; }
+        .import-btn { background: #059669; }
+        .clear-btn { background: #dc2626; }
+        
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+            font-size: 11px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .legend-color {
+            width: 4px;
+            height: 20px;
+            border-radius: 2px;
+        }
+        
         /* Supprimer le scroll horizontal - le tableau tient maintenant parfaitement */
         .table-container {
             overflow-x: visible;
@@ -234,120 +212,20 @@ function updateAnalysis() {
             padding-right: 20px;
         }
         
-        /* Boutons optimisés pour mobile */
-        .add-match {
-            background: linear-gradient(135deg, #059669, #047857);
-            color: white;
-            padding: 15px 20px;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: bold;
-            width: 100%;
-            margin-bottom: 15px;
-            font-size: 16px;
-            box-shadow: 0 3px 12px rgba(5, 150, 105, 0.3);
-            touch-action: manipulation;
-        }
-        
-        .controls-row {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 20px;
-            width: 100%;
-        }
-        
-        .controls-row button {
-            flex: 1;
-            padding: 8px 2px;
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-size: 9px;
-            font-weight: 500;
-            cursor: pointer;
-            touch-action: manipulation;
-            min-height: 36px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            line-height: 1;
-            white-space: nowrap;
-            overflow: hidden;
-        }
-        
-        .export-btn { background: #004170; }
-        .import-btn { background: #059669; }
-        .clear-btn { background: #dc2626; }
-        
-        /* Légende adaptée mobile */
-        .legend {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
-            font-size: 11px;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-        
-        .legend-color {
-            width: 4px;
-            height: 20px;
-            border-radius: 2px;
-        }
-        
-        /* Section analyse optimisée */
-        .analysis-section {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 12px;
-            font-size: 13px;
-            line-height: 1.4;
-        }
-        
-        .analysis-section h3 {
-            margin: 0 0 12px 0;
-            font-size: 16px;
-            color: #004170;
-        }
-        
-        .analysis-section p {
-            margin: 8px 0;
-        }
-        
-        /* Notifications mobiles */
-        .notification {
-            position: fixed !important;
-            top: 60px !important;
-            left: 10px !important;
-            right: 10px !important;
-            background: #059669;
-            color: white;
-            padding: 12px 15px;
-            border-radius: 10px;
-            z-index: 1000;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-            font-size: 14px;
-            text-align: center;
-        }
-        
-        /* Amélioration du contraste et lisibilité */
         .euro::after {
             content: " €";
             font-weight: normal;
         }
         
+        .match-ligue1 { border-left: 4px solid #ec4899; }
+        .match-ucl { border-left: 4px solid #1e3a8a; }
+        .match-coupe { border-left: 4px solid #dc2626; }
+        .attended-yes { 
+            box-shadow: inset 0 0 0 2px rgba(34, 197, 94, 0.3);
+        }
+        .attended-no { 
+            box-shadow: inset 0 0 0 2px rgba(251, 146, 60, 0.3);
+        }
         .revenue-positive { 
             color: #059669; 
             font-weight: bold; 
@@ -384,19 +262,38 @@ function updateAnalysis() {
             transition: transform 0.1s;
         }
         
-        /* Masquer le scroll horizontal disgracieux */
-        .table-container::-webkit-scrollbar {
-            height: 4px;
+        .analysis-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.4;
         }
         
-        .table-container::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 2px;
+        .analysis-section h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            color: #004170;
         }
         
-        .table-container::-webkit-scrollbar-thumb {
-            background: #004170;
-            border-radius: 2px;
+        .analysis-section p {
+            margin: 8px 0;
+        }
+        
+        .notification {
+            position: fixed !important;
+            top: 60px !important;
+            left: 10px !important;
+            right: 10px !important;
+            background: #059669;
+            color: white;
+            padding: 12px 15px;
+            border-radius: 10px;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            font-size: 14px;
+            text-align: center;
         }
     </style>
 </head>
@@ -441,11 +338,11 @@ function updateAnalysis() {
             </div>
             <div class="legend-item">
                 <div class="legend-color" style="background-color: #1e3a8a;"></div>
-                <span>Ligue des Champions</span>
+                <span>LDC</span>
             </div>
             <div class="legend-item">
                 <div class="legend-color" style="background-color: #dc2626;"></div>
-                <span>Coupe de France</span>
+                <span>CDF</span>
             </div>
         </div>
 
@@ -514,8 +411,6 @@ function updateAnalysis() {
             };
             
             localStorage.setItem('psg_subscription_data', JSON.stringify(saveObject));
-            
-            // Afficher confirmation de sauvegarde
             showSaveConfirmation();
         }
 
@@ -527,83 +422,17 @@ function updateAnalysis() {
                     const data = JSON.parse(saved);
                     matchCounter = data.counter || 0;
                     
-                    // Recréer les matchs sauvegardés
                     data.matches.forEach(match => {
                         addMatchWithData(match);
                     });
                     
                     updateStats();
                     updateAnalysis();
-                    
-                    // Afficher message de chargement
                     showLoadConfirmation(data.lastSave);
                 } catch (e) {
                     console.error('Erreur lors du chargement des données:', e);
                 }
             }
-        }
-
-        // Fonction pour ajouter un match avec données existantes
-        function addMatchWithData(matchData) {
-            const tableBody = document.querySelector('#matchTable tbody');
-            const row = document.createElement('tr');
-            const id = matchData.id;
-            row.id = `match-${id}`;
-            
-            row.innerHTML = `
-                <td><input type="text" placeholder="Ex: Marseille" onchange="updateMatch(${id}); saveData();" id="opponent-${id}" value="${matchData.opponent}"></td>
-                <td>
-                    <select onchange="updateMatch(${id}); saveData();" id="competition-${id}">
-                        <option value="">-</option>
-                        <option value="Ligue 1" ${matchData.competition === 'Ligue 1' ? 'selected' : ''}>L1</option>
-                        <option value="Ligue des Champions" ${matchData.competition === 'Ligue des Champions' ? 'selected' : ''}>LDC</option>
-                        <option value="Coupe de France" ${matchData.competition === 'Coupe de France' ? 'selected' : ''}>CDF</option>
-                    </select>
-                </td>
-                <td><input type="number" placeholder="0" onchange="updateMatch(${id}); saveData();" id="price-${id}" value="${matchData.price}"></td>
-                <td>
-                    <select onchange="updateMatch(${id}); saveData();" id="attended-${id}">
-                        <option value="">-</option>
-                        <option value="Oui" ${matchData.attended === 'Oui' ? 'selected' : ''}>Oui</option>
-                        <option value="Non" ${matchData.attended === 'Non' ? 'selected' : ''}>Non</option>
-                    </select>
-                </td>
-                <td class="euro" id="revenue-${id}">0</td>
-                <td><button onclick="removeMatch(${id}); saveData();">❌</button></td>
-            `;
-            
-            tableBody.appendChild(row);
-            updateRowStyle(id);
-            updateMatch(id);
-            
-            // Force la mise à jour des stats après ajout
-            setTimeout(() => {
-                updateStats();
-                updateAnalysis();
-            }, 200);
-        }
-
-        function showSaveConfirmation() {
-            const notification = document.createElement('div');
-            notification.innerHTML = '💾 Sauvegardé !';
-            notification.className = 'notification';
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 1500);
-        }
-
-        function showLoadConfirmation(lastSave) {
-            const date = new Date(lastSave).toLocaleDateString('fr-FR', {
-                day: '2-digit',
-                month: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-            const notification = document.createElement('div');
-            notification.innerHTML = `📂 Données chargées (${date})`;
-            notification.className = 'notification';
-            notification.style.background = '#004170';
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 2500);
         }
 
         function addMatch() {
@@ -636,13 +465,50 @@ function updateAnalysis() {
             
             tableBody.appendChild(row);
             updateRowStyle(matchCounter);
-            saveData(); // Sauvegarder après ajout
+            saveData();
             
-            // Force la mise à jour immédiate des stats
             setTimeout(() => {
                 updateStats();
                 updateAnalysis();
             }, 100);
+        }
+
+        function addMatchWithData(matchData) {
+            const tableBody = document.querySelector('#matchTable tbody');
+            const row = document.createElement('tr');
+            const id = matchData.id;
+            row.id = `match-${id}`;
+            
+            row.innerHTML = `
+                <td><input type="text" placeholder="Ex: Marseille" onchange="updateMatch(${id}); saveData();" id="opponent-${id}" value="${matchData.opponent}"></td>
+                <td>
+                    <select onchange="updateMatch(${id}); saveData();" id="competition-${id}">
+                        <option value="">-</option>
+                        <option value="Ligue 1" ${matchData.competition === 'Ligue 1' ? 'selected' : ''}>L1</option>
+                        <option value="Ligue des Champions" ${matchData.competition === 'Ligue des Champions' ? 'selected' : ''}>LDC</option>
+                        <option value="Coupe de France" ${matchData.competition === 'Coupe de France' ? 'selected' : ''}>CDF</option>
+                    </select>
+                </td>
+                <td><input type="number" placeholder="0" onchange="updateMatch(${id}); saveData();" id="price-${id}" value="${matchData.price}"></td>
+                <td>
+                    <select onchange="updateMatch(${id}); saveData();" id="attended-${id}">
+                        <option value="">-</option>
+                        <option value="Oui" ${matchData.attended === 'Oui' ? 'selected' : ''}>Oui</option>
+                        <option value="Non" ${matchData.attended === 'Non' ? 'selected' : ''}>Non</option>
+                    </select>
+                </td>
+                <td class="euro" id="revenue-${id}">0</td>
+                <td><button onclick="removeMatch(${id}); saveData();">❌</button></td>
+            `;
+            
+            tableBody.appendChild(row);
+            updateRowStyle(id);
+            updateMatch(id);
+            
+            setTimeout(() => {
+                updateStats();
+                updateAnalysis();
+            }, 200);
         }
 
         function updateMatch(matchId) {
@@ -654,10 +520,8 @@ function updateAnalysis() {
             const revenue = attended === 'Oui' ? 0 : price;
             document.getElementById(`revenue-${matchId}`).textContent = revenue;
             
-            // Mise à jour du style de la ligne
             updateRowStyle(matchId);
             
-            // Mise à jour immédiate des statistiques et de l'analyse
             setTimeout(() => {
                 updateStats();
                 updateAnalysis();
@@ -669,14 +533,12 @@ function updateAnalysis() {
             const competition = document.getElementById(`competition-${matchId}`).value;
             const attended = document.getElementById(`attended-${matchId}`).value;
             
-            // Retirer les classes existantes
             row.classList.remove('match-ligue1', 'match-ucl', 'match-coupe', 'attended-yes', 'attended-no');
-            row.style.background = ''; // Reset du background
+            row.style.background = '';
             
-            // Ajouter la classe selon la compétition avec fond coloré
             if (competition === 'Ligue 1') {
                 row.classList.add('match-ligue1');
-                row.style.background = 'rgba(236, 72, 153, 0.1)'; // Rose
+                row.style.background = 'rgba(236, 72, 153, 0.1)';
                 row.style.borderLeft = '4px solid #ec4899';
             }
             if (competition === 'Ligue des Champions') {
@@ -690,10 +552,8 @@ function updateAnalysis() {
                 row.style.borderLeft = '4px solid #dc2626';
             }
             
-            // Ajouter une surbrillance selon la présence (par-dessus la couleur de compétition)
             if (attended === 'Oui') {
                 row.classList.add('attended-yes');
-                // Ajouter une légère surbrillance verte pour les matchs assistés
                 if (competition) {
                     const currentBg = row.style.background;
                     row.style.background = `${currentBg}, rgba(34, 197, 94, 0.05)`;
@@ -703,7 +563,6 @@ function updateAnalysis() {
             }
             if (attended === 'Non') {
                 row.classList.add('attended-no');
-                // Ajouter une légère surbrillance orange pour les places vendues
                 if (competition) {
                     const currentBg = row.style.background;
                     row.style.background = `${currentBg}, rgba(251, 146, 60, 0.05)`;
@@ -717,7 +576,7 @@ function updateAnalysis() {
             document.getElementById(`match-${matchId}`).remove();
             updateStats();
             updateAnalysis();
-            saveData(); // Sauvegarder après suppression
+            saveData();
         }
 
         function updateStats() {
@@ -725,50 +584,32 @@ function updateAnalysis() {
             let totalRevenue = 0;
             let attendedCount = 0;
             let soldCount = 0;
-            let lostCount = 0; // Places perdues
+            let lostCount = 0;
             let totalSalesAmount = 0;
-            
-            console.log('Nombre de lignes trouvées:', rows.length);
             
             rows.forEach((row, index) => {
                 try {
-                    const revenueElement = row.querySelector('td:nth-child(6)');
-                    const attendedElement = row.querySelector('td:nth-child(5) select');
-                    const priceElement = row.querySelector('td:nth-child(4) input');
+                    const revenueElement = row.querySelector('td:nth-child(5)');
+                    const attendedElement = row.querySelector('td:nth-child(4) select');
+                    const priceElement = row.querySelector('td:nth-child(3) input');
                     
                     if (revenueElement && attendedElement && priceElement) {
                         const revenue = parseFloat(revenueElement.textContent.replace('€', '').trim()) || 0;
                         const attended = attendedElement.value;
                         const price = parseFloat(priceElement.value) || 0;
                         
-                        console.log(`Ligne ${index + 1}:`, {
-                            revenue,
-                            attended,
-                            price,
-                            revenueText: revenueElement.textContent
-                        });
-                        
                         totalRevenue += revenue;
                         
                         if (attended === 'Oui') {
                             attendedCount++;
-                            console.log('Match assisté trouvé');
                         } else if (attended === 'Non') {
                             if (price > 0) {
                                 soldCount++;
                                 totalSalesAmount += price;
-                                console.log('Place vendue trouvée, prix:', price);
                             } else {
                                 lostCount++;
-                                console.log('Place perdue trouvée (prix = 0)');
                             }
                         }
-                    } else {
-                        console.log(`Ligne ${index + 1}: éléments manquants`, {
-                            revenueElement: !!revenueElement,
-                            attendedElement: !!attendedElement,
-                            priceElement: !!priceElement
-                        });
                     }
                 } catch (e) {
                     console.log('Erreur ligne', index + 1, ':', e);
@@ -778,16 +619,6 @@ function updateAnalysis() {
             const netResult = totalRevenue - 1680;
             const averagePrice = soldCount > 0 ? Math.round(totalSalesAmount / soldCount) : 0;
             
-            console.log('Résultats finaux:', {
-                totalRevenue,
-                attendedCount,
-                soldCount,
-                lostCount,
-                totalSalesAmount,
-                averagePrice
-            });
-            
-            // Mise à jour des éléments
             const elements = {
                 'totalRevenue': totalRevenue + '€',
                 'netResult': netResult + '€',
@@ -801,13 +632,9 @@ function updateAnalysis() {
                 const element = document.getElementById(id);
                 if (element) {
                     element.textContent = elements[id];
-                    console.log(`Mise à jour ${id}:`, elements[id]);
-                    
                     if (id === 'netResult') {
                         element.className = 'stat-value ' + (netResult >= 0 ? 'revenue-positive' : 'revenue-negative');
                     }
-                } else {
-                    console.log(`Élément ${id} introuvable !`);
                 }
             });
         }
@@ -831,16 +658,15 @@ function updateAnalysis() {
             const costPerAttendedMatch = attendedCount > 0 ? Math.round((1680 - totalRevenue) / attendedCount) : 0;
             const profitabilityRate = Math.round((totalRevenue / 1680) * 100);
             
-            // Répartition par compétition
             let ligue1Count = 0, ligue1Attended = 0, ligue1Sold = 0, ligue1Lost = 0;
             let uclCount = 0, uclAttended = 0, uclSold = 0, uclLost = 0;
             let coupeCount = 0, coupeAttended = 0, coupeSold = 0, coupeLost = 0;
             
             rows.forEach(row => {
                 try {
-                    const competitionSelect = row.querySelector('td:nth-child(3) select');
-                    const attendedSelect = row.querySelector('td:nth-child(5) select');
-                    const priceInput = row.querySelector('td:nth-child(4) input');
+                    const competitionSelect = row.querySelector('td:nth-child(2) select');
+                    const attendedSelect = row.querySelector('td:nth-child(4) select');
+                    const priceInput = row.querySelector('td:nth-child(3) input');
                     
                     if (competitionSelect && attendedSelect && priceInput) {
                         const competition = competitionSelect.value;
@@ -884,8 +710,8 @@ function updateAnalysis() {
                 
                 <p style="margin-top: 15px;"><strong>🏆 Par compétition:</strong></p>
                 <p style="margin-left: 10px;">🌸 <strong>Ligue 1:</strong> ${ligue1Count} matchs (${ligue1Attended} assistés, ${ligue1Sold} vendus, ${ligue1Lost} perdus)</p>
-                <p style="margin-left: 10px;">🔵 <strong>Ligue des Champions:</strong> ${uclCount} matchs (${uclAttended} assistés, ${uclSold} vendus, ${uclLost} perdus)</p>
-                <p style="margin-left: 10px;">🔴 <strong>Coupe de France:</strong> ${coupeCount} matchs (${coupeAttended} assistés, ${coupeSold} vendus, ${coupeLost} perdus)</p>
+                <p style="margin-left: 10px;">🔵 <strong>LDC:</strong> ${uclCount} matchs (${uclAttended} assistés, ${uclSold} vendus, ${uclLost} perdus)</p>
+                <p style="margin-left: 10px;">🔴 <strong>CDF:</strong> ${coupeCount} matchs (${coupeAttended} assistés, ${coupeSold} vendus, ${coupeLost} perdus)</p>
             `;
             
             if (netResult >= 0) {
@@ -902,21 +728,31 @@ function updateAnalysis() {
                 analysis += `<p>• Ou vendre une place à <strong>${remainingAmount}€</strong> pour rentabiliser d'un coup</p>`;
             }
             
-            console.log('Analysis HTML:', analysis);
             document.getElementById('analysis').innerHTML = analysis;
         }
 
-        // Ajouter quelques matchs d'exemple
-        window.onload = function() {
-            // Charger les données sauvegardées au démarrage
-            loadData();
-            
-            // Force une mise à jour initiale des stats
-            setTimeout(() => {
-                updateStats();
-                updateAnalysis();
-            }, 500);
-        };
+        function showSaveConfirmation() {
+            const notification = document.createElement('div');
+            notification.innerHTML = '💾 Sauvegardé !';
+            notification.className = 'notification';
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 1500);
+        }
+
+        function showLoadConfirmation(lastSave) {
+            const date = new Date(lastSave).toLocaleDateString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            const notification = document.createElement('div');
+            notification.innerHTML = `📂 Données chargées (${date})`;
+            notification.className = 'notification';
+            notification.style.background = '#004170';
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 2500);
+        }
 
         // Fonctions d'export/import
         function exportData() {
@@ -957,7 +793,7 @@ function updateAnalysis() {
                 try {
                     const data = JSON.parse(e.target.result);
                     localStorage.setItem('psg_subscription_data', JSON.stringify(data));
-                    location.reload(); // Recharger la page pour appliquer les données
+                    location.reload();
                 } catch (error) {
                     alert('Erreur lors de l\'import des données !');
                 }
@@ -971,6 +807,16 @@ function updateAnalysis() {
                 location.reload();
             }
         }
+
+        // Chargement initial
+        window.onload = function() {
+            loadData();
+            
+            setTimeout(() => {
+                updateStats();
+                updateAnalysis();
+            }, 500);
+        };
     </script>
 </body>
 </html>
