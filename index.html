@@ -1,4 +1,96 @@
-<!DOCTYPE html>
+function updateAnalysis() {
+            const rows = document.querySelectorAll('#matchTable tbody tr');
+            const totalMatches = rows.length;
+            
+            if (totalMatches === 0) {
+                document.getElementById('analysis').innerHTML = '<p>Ajoutez des matchs pour voir l\'analyse détaillée de votre abonnement.</p>';
+                return;
+            }
+            
+            const totalRevenue = parseFloat(document.getElementById('totalRevenue').textContent.replace('€', '')) || 0;
+            const netResult = totalRevenue - 1680;
+            const attendedCount = parseInt(document.getElementById('attendedMatches').textContent) || 0;
+            const soldCount = parseInt(document.getElementById('soldMatches').textContent) || 0;
+            const lostCount = parseInt(document.getElementById('lostMatches').textContent) || 0;
+            const averagePrice = parseInt(document.getElementById('averagePrice').textContent.replace('€', '')) || 0;
+            
+            const costPerAttendedMatch = attendedCount > 0 ? Math.round((1680 - totalRevenue) / attendedCount) : 0;
+            const profitabilityRate = Math.round((totalRevenue / 1680) * 100);
+            
+            // Répartition par compétition
+            let ligue1Count = 0, ligue1Attended = 0, ligue1Sold = 0, ligue1Lost = 0;
+            let uclCount = 0, uclAttended = 0, uclSold = 0, uclLost = 0;
+            let coupeCount = 0, coupeAttended = 0, coupeSold = 0, coupeLost = 0;
+            
+            rows.forEach(row => {
+                try {
+                    const competitionSelect = row.querySelector('td:nth-child(2) select');
+                    const attendedSelect = row.querySelector('td:nth-child(4) select');
+                    const priceInput = row.querySelector('td:nth-child(3) input');
+                    
+                    if (competitionSelect && attendedSelect && priceInput) {
+                        const competition = competitionSelect.value;
+                        const attended = attendedSelect.value;
+                        const price = parseFloat(priceInput.value) || 0;
+                        
+                        if (competition === 'Ligue 1') {
+                            ligue1Count++;
+                            if (attended === 'Oui') ligue1Attended++;
+                            else if (attended === 'Non') {
+                                if (price > 0) ligue1Sold++;
+                                else ligue1Lost++;
+                            }
+                        } else if (competition === 'Ligue des Champions') {
+                            uclCount++;
+                            if (attended === 'Oui') uclAttended++;
+                            else if (attended === 'Non') {
+                                if (price > 0) uclSold++;
+                                else uclLost++;
+                            }
+                        } else if (competition === 'Coupe de France') {
+                            coupeCount++;
+                            if (attended === 'Oui') coupeAttended++;
+                            else if (attended === 'Non') {
+                                if (price > 0) coupeSold++;
+                                else coupeLost++;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.log('Erreur analyse ligne:', e);
+                }
+            });
+            
+            let analysis = `
+                <p><strong>📈 Rentabilité:</strong> ${profitabilityRate}% (${totalRevenue}€ / 1680€)</p>
+                <p><strong>💰 Résultat net:</strong> ${netResult >= 0 ? '+' : ''}${netResult}€</p>
+                <p><strong>🎫 Coût par match assisté:</strong> ${costPerAttendedMatch > 0 ? costPerAttendedMatch : 0}€</p>
+                <p><strong>📊 Répartition:</strong> ${attendedCount} assistés, ${soldCount} vendues, ${lostCount} perdues</p>
+                <p><strong>💵 Prix moyen de vente:</strong> ${averagePrice}€</p>
+                
+                <p style="margin-top: 15px;"><strong>🏆 Par compétition:</strong></p>
+                <p style="margin-left: 10px;">🌸 <strong>Ligue 1:</strong> ${ligue1Count} matchs (${ligue1Attended} assistés, ${ligue1Sold} vendus, ${ligue1Lost} perdus)</p>
+                <p style="margin-left: 10px;">🔵 <strong>Ligue des Champions:</strong> ${uclCount} matchs (${uclAttended} assistés, ${uclSold} vendus, ${uclLost} perdus)</p>
+                <p style="margin-left: 10px;">🔴 <strong>Coupe de France:</strong> ${coupeCount} matchs (${coupeAttended} assistés, ${coupeSold} vendus, ${coupeLost} perdus)</p>
+            `;
+            
+            if (netResult >= 0) {
+                analysis += '<p style="color: #059669; margin-top: 15px;"><strong>🎉 Félicitations ! Votre abonnement est rentabilisé.</strong></p>';
+            } else {
+                const remainingAmount = Math.abs(netResult);
+                const additionalSalesNeeded = averagePrice > 0 ? Math.ceil(remainingAmount / averagePrice) : 0;
+                
+                analysis += `<p style="color: #dc2626; margin-top: 15px;"><strong>📊 Pour rentabiliser complètement :</strong></p>`;
+                analysis += `<p>• Montant restant à récupérer: <strong>${remainingAmount}€</strong></p>`;
+                if (averagePrice > 0) {
+                    analysis += `<p>• Au prix moyen de vos ventes (${averagePrice}€), il faudrait vendre <strong>${additionalSalesNeeded} places supplémentaires</strong></p>`;
+                }
+                analysis += `<p>• Ou vendre une place à <strong>${remainingAmount}€</strong> pour rentabiliser d'un coup</p>`;
+            }
+            
+            console.log('Analysis HTML:', analysis);
+            document.getElementById('analysis').innerHTML = analysis;
+        }<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -73,10 +165,9 @@
             line-height: 1.2;
         }
         
-        /* Table responsive pour mobile */
+        /* Supprimer le scroll horizontal - le tableau tient maintenant parfaitement */
         .table-container {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+            overflow-x: visible;
             border-radius: 12px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             margin-bottom: 20px;
@@ -84,7 +175,7 @@
         
         table {
             width: 100%;
-            min-width: 800px; /* Assure que le tableau ne se déforme pas */
+            min-width: 100%; /* Suppression de la largeur minimale fixe */
             border-collapse: collapse;
             background: white;
             font-size: 12px;
@@ -93,50 +184,54 @@
         th {
             background: linear-gradient(135deg, #004170, #0066aa);
             color: white;
-            padding: 12px 6px;
+            padding: 10px 4px;
             text-align: center;
             font-weight: bold;
-            font-size: 11px;
+            font-size: 10px;
             position: sticky;
             top: 0;
             z-index: 10;
         }
         
+        /* Largeurs optimisées pour iPhone 15 Pro */
+        th:nth-child(1) { width: 30%; } /* Adversaire */
+        th:nth-child(2) { width: 25%; } /* Compétition */
+        th:nth-child(3) { width: 15%; } /* Prix */
+        th:nth-child(4) { width: 15%; } /* Assisté */
+        th:nth-child(5) { width: 12%; } /* Revenus */
+        th:nth-child(6) { width: 3%; }  /* Bouton suppression */
+        
         td {
-            padding: 8px 4px;
+            padding: 6px 2px;
             border-bottom: 1px solid #eee;
             font-size: 11px;
             text-align: center;
         }
         
-        /* Inputs optimisés pour mobile */
+        /* Inputs optimisés pour les petites colonnes */
         input, select {
             width: 100%;
-            padding: 8px 4px;
+            padding: 6px 2px;
             border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
+            border-radius: 4px;
+            font-size: 11px;
             box-sizing: border-box;
             -webkit-appearance: none;
             appearance: none;
             background: white;
         }
         
-        input[type="date"] {
-            min-width: 120px;
-        }
-        
         input[type="number"] {
-            min-width: 80px;
+            min-width: 50px;
+            text-align: center;
         }
         
         select {
-            min-width: 100px;
             background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
             background-repeat: no-repeat;
-            background-position: right 8px center;
-            background-size: 16px;
-            padding-right: 30px;
+            background-position: right 4px center;
+            background-size: 12px;
+            padding-right: 20px;
         }
         
         /* Boutons optimisés pour mobile */
@@ -308,7 +403,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔴🔵 SUIVI ABONNEMENT PSG 2025-2026</h1>
+            <h1>🔴🔵 SUIVI ABONNEMENT PSG 2024-2025</h1>
             <p>Coût initial: 1680€ | Suivi des reventes et rentabilité</p>
         </div>
 
@@ -367,10 +462,9 @@
             <table id="matchTable">
                 <thead>
                     <tr>
-                        <th>Date</th>
                         <th>Adversaire</th>
                         <th>Compétition</th>
-                        <th>Prix vente</th>
+                        <th>Prix</th>
                         <th>Assisté</th>
                         <th>Revenus</th>
                         <th>❌</th>
@@ -404,7 +498,6 @@
                 if (matchId) {
                     const data = {
                         id: matchId,
-                        date: document.getElementById(`date-${matchId}`)?.value || '',
                         opponent: document.getElementById(`opponent-${matchId}`)?.value || '',
                         competition: document.getElementById(`competition-${matchId}`)?.value || '',
                         price: document.getElementById(`price-${matchId}`)?.value || 0,
@@ -458,22 +551,21 @@
             row.id = `match-${id}`;
             
             row.innerHTML = `
-                <td><input type="date" onchange="updateMatch(${id}); saveData();" id="date-${id}" value="${matchData.date}"></td>
                 <td><input type="text" placeholder="Ex: Marseille" onchange="updateMatch(${id}); saveData();" id="opponent-${id}" value="${matchData.opponent}"></td>
                 <td>
                     <select onchange="updateMatch(${id}); saveData();" id="competition-${id}">
-                        <option value="">Sélectionner</option>
-                        <option value="Ligue 1" ${matchData.competition === 'Ligue 1' ? 'selected' : ''}>Ligue 1</option>
-                        <option value="Ligue des Champions" ${matchData.competition === 'Ligue des Champions' ? 'selected' : ''}>Ligue des Champions</option>
-                        <option value="Coupe de France" ${matchData.competition === 'Coupe de France' ? 'selected' : ''}>Coupe de France</option>
+                        <option value="">-</option>
+                        <option value="Ligue 1" ${matchData.competition === 'Ligue 1' ? 'selected' : ''}>L1</option>
+                        <option value="Ligue des Champions" ${matchData.competition === 'Ligue des Champions' ? 'selected' : ''}>LDC</option>
+                        <option value="Coupe de France" ${matchData.competition === 'Coupe de France' ? 'selected' : ''}>CDF</option>
                     </select>
                 </td>
                 <td><input type="number" placeholder="0" onchange="updateMatch(${id}); saveData();" id="price-${id}" value="${matchData.price}"></td>
                 <td>
                     <select onchange="updateMatch(${id}); saveData();" id="attended-${id}">
                         <option value="">-</option>
-                        <option value="Oui" ${matchData.attended === 'Oui' ? 'selected' : ''}>Oui (0€)</option>
-                        <option value="Non" ${matchData.attended === 'Non' ? 'selected' : ''}>Non (vendu)</option>
+                        <option value="Oui" ${matchData.attended === 'Oui' ? 'selected' : ''}>Oui</option>
+                        <option value="Non" ${matchData.attended === 'Non' ? 'selected' : ''}>Non</option>
                     </select>
                 </td>
                 <td class="euro" id="revenue-${id}">0</td>
@@ -521,22 +613,21 @@
             row.id = `match-${matchCounter}`;
             
             row.innerHTML = `
-                <td><input type="date" onchange="updateMatch(${matchCounter}); saveData();" id="date-${matchCounter}"></td>
                 <td><input type="text" placeholder="Ex: Marseille" onchange="updateMatch(${matchCounter}); saveData();" id="opponent-${matchCounter}"></td>
                 <td>
                     <select onchange="updateMatch(${matchCounter}); saveData();" id="competition-${matchCounter}">
-                        <option value="">Sélectionner</option>
-                        <option value="Ligue 1">Ligue 1</option>
-                        <option value="Ligue des Champions">Ligue des Champions</option>
-                        <option value="Coupe de France">Coupe de France</option>
+                        <option value="">-</option>
+                        <option value="Ligue 1">L1</option>
+                        <option value="Ligue des Champions">LDC</option>
+                        <option value="Coupe de France">CDF</option>
                     </select>
                 </td>
                 <td><input type="number" placeholder="0" onchange="updateMatch(${matchCounter}); saveData();" id="price-${matchCounter}"></td>
                 <td>
                     <select onchange="updateMatch(${matchCounter}); saveData();" id="attended-${matchCounter}">
                         <option value="">-</option>
-                        <option value="Oui">Oui (0€)</option>
-                        <option value="Non">Non (vendu)</option>
+                        <option value="Oui">Oui</option>
+                        <option value="Non">Non</option>
                     </select>
                 </td>
                 <td class="euro" id="revenue-${matchCounter}">0</td>
@@ -555,7 +646,6 @@
         }
 
         function updateMatch(matchId) {
-            const date = document.getElementById(`date-${matchId}`).value;
             const opponent = document.getElementById(`opponent-${matchId}`).value;
             const competition = document.getElementById(`competition-${matchId}`).value;
             const price = parseFloat(document.getElementById(`price-${matchId}`).value) || 0;
