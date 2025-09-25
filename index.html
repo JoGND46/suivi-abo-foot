@@ -479,6 +479,12 @@
             tableBody.appendChild(row);
             updateRowStyle(id);
             updateMatch(id);
+            
+            // Force la mise à jour des stats après ajout
+            setTimeout(() => {
+                updateStats();
+                updateAnalysis();
+            }, 200);
         }
 
         function showSaveConfirmation() {
@@ -536,6 +542,12 @@
             tableBody.appendChild(row);
             updateRowStyle(matchCounter);
             saveData(); // Sauvegarder après ajout
+            
+            // Force la mise à jour immédiate des stats
+            setTimeout(() => {
+                updateStats();
+                updateAnalysis();
+            }, 100);
         }
 
         function updateMatch(matchId) {
@@ -551,9 +563,11 @@
             // Mise à jour du style de la ligne
             updateRowStyle(matchId);
             
-            // Mise à jour des statistiques
-            updateStats();
-            updateAnalysis();
+            // Mise à jour immédiate des statistiques et de l'analyse
+            setTimeout(() => {
+                updateStats();
+                updateAnalysis();
+            }, 100);
         }
 
         function updateRowStyle(matchId) {
@@ -620,31 +634,61 @@
             let totalSalesAmount = 0; // Pour calculer le prix moyen des ventes réelles
             
             rows.forEach(row => {
-                const revenueText = row.querySelector('td:nth-child(6)').textContent;
-                const revenue = parseFloat(revenueText) || 0;
-                const attended = row.querySelector('select:last-of-type').value;
-                
-                totalRevenue += revenue;
-                
-                if (attended === 'Oui') {
-                    attendedCount++;
-                } else if (attended === 'Non') {
-                    soldCount++;
-                    if (revenue > 0) {
-                        totalSalesAmount += revenue;
+                try {
+                    const revenueElement = row.querySelector('td:nth-child(6)');
+                    const attendedElement = row.querySelector('select:last-of-type');
+                    
+                    if (revenueElement && attendedElement) {
+                        const revenue = parseFloat(revenueElement.textContent) || 0;
+                        const attended = attendedElement.value;
+                        
+                        totalRevenue += revenue;
+                        
+                        if (attended === 'Oui') {
+                            attendedCount++;
+                        } else if (attended === 'Non') {
+                            soldCount++;
+                            if (revenue > 0) {
+                                totalSalesAmount += revenue;
+                            }
+                        }
                     }
+                } catch (e) {
+                    console.log('Erreur lors du calcul pour une ligne:', e);
                 }
             });
             
             const netResult = totalRevenue - 1680;
             const averagePrice = soldCount > 0 ? Math.round(totalSalesAmount / soldCount) : 0;
             
-            document.getElementById('totalRevenue').textContent = totalRevenue + '€';
-            document.getElementById('netResult').textContent = netResult + '€';
-            document.getElementById('netResult').className = 'stat-value ' + (netResult >= 0 ? 'revenue-positive' : 'revenue-negative');
-            document.getElementById('attendedMatches').textContent = attendedCount;
-            document.getElementById('soldMatches').textContent = soldCount;
-            document.getElementById('averagePrice').textContent = averagePrice + '€';
+            // Mise à jour des éléments avec vérification d'existence
+            const elements = {
+                'totalRevenue': totalRevenue + '€',
+                'netResult': netResult + '€',
+                'attendedMatches': attendedCount.toString(),
+                'soldMatches': soldCount.toString(),
+                'averagePrice': averagePrice + '€'
+            };
+            
+            Object.keys(elements).forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = elements[id];
+                    
+                    // Ajouter la classe de couleur pour le résultat net
+                    if (id === 'netResult') {
+                        element.className = 'stat-value ' + (netResult >= 0 ? 'revenue-positive' : 'revenue-negative');
+                    }
+                }
+            });
+            
+            console.log('Stats mises à jour:', {
+                totalRevenue,
+                netResult,
+                attendedCount,
+                soldCount,
+                averagePrice
+            });
         }
 
         function updateAnalysis() {
@@ -723,6 +767,12 @@
         window.onload = function() {
             // Charger les données sauvegardées au démarrage
             loadData();
+            
+            // Force une mise à jour initiale des stats
+            setTimeout(() => {
+                updateStats();
+                updateAnalysis();
+            }, 500);
         };
 
         // Fonctions d'export/import
