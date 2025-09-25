@@ -219,7 +219,7 @@
         
         .match-ligue1 { border-left: 4px solid #ec4899; }
         .match-ucl { border-left: 4px solid #1e3a8a; }
-        .match-coupe { border-left: 4px solid #dc2626; }
+        .match-coupe { border-left: 4px solid #fbbf24; }
         .attended-yes { 
             box-shadow: inset 0 0 0 2px rgba(34, 197, 94, 0.3);
         }
@@ -238,16 +238,25 @@
         
         /* Bouton suppression optimisé */
         td button {
-            background: #dc2626;
-            color: white;
-            border: none;
-            padding: 8px;
+            background: white;
+            color: #dc2626;
+            border: 2px solid #dc2626;
+            padding: 6px;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
             min-width: 32px;
             min-height: 32px;
             touch-action: manipulation;
+            font-weight: bold;
+        }
+        
+        td button:hover {
+            background: #fef2f2;
+        }
+        
+        td button:active {
+            background: #fee2e2;
         }
         
         /* Amélioration de l'accessibilité tactile */
@@ -341,7 +350,7 @@
                 <span>LDC</span>
             </div>
             <div class="legend-item">
-                <div class="legend-color" style="background-color: #dc2626;"></div>
+                <div class="legend-color" style="background-color: #fbbf24;"></div>
                 <span>CDF</span>
             </div>
         </div>
@@ -548,8 +557,8 @@
             }
             if (competition === 'Coupe de France') {
                 row.classList.add('match-coupe');
-                row.style.background = 'rgba(220, 38, 38, 0.1)';
-                row.style.borderLeft = '4px solid #dc2626';
+                row.style.background = 'rgba(251, 191, 36, 0.1)';
+                row.style.borderLeft = '4px solid #fbbf24';
             }
             
             if (attended === 'Oui') {
@@ -711,7 +720,7 @@
                 <p style="margin-top: 15px;"><strong>🏆 Par compétition:</strong></p>
                 <p style="margin-left: 10px;">🌸 <strong>Ligue 1:</strong> ${ligue1Count} matchs (${ligue1Attended} assistés, ${ligue1Sold} vendus, ${ligue1Lost} perdus)</p>
                 <p style="margin-left: 10px;">🔵 <strong>LDC:</strong> ${uclCount} matchs (${uclAttended} assistés, ${uclSold} vendus, ${uclLost} perdus)</p>
-                <p style="margin-left: 10px;">🔴 <strong>CDF:</strong> ${coupeCount} matchs (${coupeAttended} assistés, ${coupeSold} vendus, ${coupeLost} perdus)</p>
+                <p style="margin-left: 10px;">🟡 <strong>CDF:</strong> ${coupeCount} matchs (${coupeAttended} assistés, ${coupeSold} vendus, ${coupeLost} perdus)</p>
             `;
             
             if (netResult >= 0) {
