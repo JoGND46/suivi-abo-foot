@@ -563,19 +563,46 @@
             
             // Retirer les classes existantes
             row.classList.remove('match-ligue1', 'match-ucl', 'match-coupe', 'attended-yes', 'attended-no');
+            row.style.background = ''; // Reset du background
             
-            // Ajouter la classe selon la compétition avec les nouvelles couleurs
+            // Ajouter la classe selon la compétition avec fond coloré
             if (competition === 'Ligue 1') {
                 row.classList.add('match-ligue1');
-                // Ajouter un style de fond avec les couleurs McDonald's pour Ligue 1
-                row.style.background = 'linear-gradient(90deg, rgba(0, 112, 74, 0.1) 50%, rgba(255, 204, 0, 0.1) 50%)';
+                row.style.background = 'linear-gradient(90deg, rgba(0, 112, 74, 0.15) 0%, rgba(255, 204, 0, 0.15) 100%)';
+                row.style.borderLeft = '4px solid #00704a';
             }
-            if (competition === 'Ligue des Champions') row.classList.add('match-ucl');
-            if (competition === 'Coupe de France') row.classList.add('match-coupe');
+            if (competition === 'Ligue des Champions') {
+                row.classList.add('match-ucl');
+                row.style.background = 'rgba(30, 58, 138, 0.1)';
+                row.style.borderLeft = '4px solid #1e3a8a';
+            }
+            if (competition === 'Coupe de France') {
+                row.classList.add('match-coupe');
+                row.style.background = 'rgba(220, 38, 38, 0.1)';
+                row.style.borderLeft = '4px solid #dc2626';
+            }
             
-            // Ajouter la classe selon la présence
-            if (attended === 'Oui') row.classList.add('attended-yes');
-            if (attended === 'Non') row.classList.add('attended-no');
+            // Ajouter une surbrillance selon la présence (par-dessus la couleur de compétition)
+            if (attended === 'Oui') {
+                row.classList.add('attended-yes');
+                // Ajouter une légère surbrillance verte pour les matchs assistés
+                if (competition) {
+                    const currentBg = row.style.background;
+                    row.style.background = `${currentBg}, rgba(34, 197, 94, 0.05)`;
+                } else {
+                    row.style.background = 'rgba(34, 197, 94, 0.1)';
+                }
+            }
+            if (attended === 'Non') {
+                row.classList.add('attended-no');
+                // Ajouter une légère surbrillance orange pour les places vendues
+                if (competition) {
+                    const currentBg = row.style.background;
+                    row.style.background = `${currentBg}, rgba(251, 146, 60, 0.05)`;
+                } else {
+                    row.style.background = 'rgba(251, 146, 60, 0.1)';
+                }
+            }
         }
 
         function removeMatch(matchId) {
@@ -590,7 +617,7 @@
             let totalRevenue = 0;
             let attendedCount = 0;
             let soldCount = 0;
-            let validSales = 0;
+            let totalSalesAmount = 0; // Pour calculer le prix moyen des ventes réelles
             
             rows.forEach(row => {
                 const revenueText = row.querySelector('td:nth-child(6)').textContent;
@@ -599,15 +626,18 @@
                 
                 totalRevenue += revenue;
                 
-                if (attended === 'Oui') attendedCount++;
-                if (attended === 'Non' && revenue > 0) {
+                if (attended === 'Oui') {
+                    attendedCount++;
+                } else if (attended === 'Non') {
                     soldCount++;
-                    validSales++;
+                    if (revenue > 0) {
+                        totalSalesAmount += revenue;
+                    }
                 }
             });
             
             const netResult = totalRevenue - 1680;
-            const averagePrice = validSales > 0 ? Math.round(totalRevenue / validSales) : 0;
+            const averagePrice = soldCount > 0 ? Math.round(totalSalesAmount / soldCount) : 0;
             
             document.getElementById('totalRevenue').textContent = totalRevenue + '€';
             document.getElementById('netResult').textContent = netResult + '€';
@@ -630,27 +660,59 @@
             const netResult = totalRevenue - 1680;
             const attendedCount = parseInt(document.getElementById('attendedMatches').textContent) || 0;
             const soldCount = parseInt(document.getElementById('soldMatches').textContent) || 0;
+            const averagePrice = parseInt(document.getElementById('averagePrice').textContent) || 0;
             
             const costPerAttendedMatch = attendedCount > 0 ? Math.round((1680 - totalRevenue) / attendedCount) : 0;
             const profitabilityRate = Math.round((totalRevenue / 1680) * 100);
             
+            // Répartition par compétition
+            let ligue1Count = 0, ligue1Attended = 0, ligue1Sold = 0;
+            let uclCount = 0, uclAttended = 0, uclSold = 0;
+            let coupeCount = 0, coupeAttended = 0, coupeSold = 0;
+            
+            rows.forEach(row => {
+                const competition = row.querySelector('select:nth-of-type(1)').value;
+                const attended = row.querySelector('select:last-of-type').value;
+                
+                if (competition === 'Ligue 1') {
+                    ligue1Count++;
+                    if (attended === 'Oui') ligue1Attended++;
+                    if (attended === 'Non') ligue1Sold++;
+                } else if (competition === 'Ligue des Champions') {
+                    uclCount++;
+                    if (attended === 'Oui') uclAttended++;
+                    if (attended === 'Non') uclSold++;
+                } else if (competition === 'Coupe de France') {
+                    coupeCount++;
+                    if (attended === 'Oui') coupeAttended++;
+                    if (attended === 'Non') coupeSold++;
+                }
+            });
+            
             let analysis = `
                 <p><strong>📈 Rentabilité:</strong> ${profitabilityRate}% (${totalRevenue}€ / 1680€)</p>
                 <p><strong>💰 Résultat net:</strong> ${netResult >= 0 ? '+' : ''}${netResult}€</p>
-                <p><strong>🎫 Coût par match assisté:</strong> ${costPerAttendedMatch}€</p>
+                <p><strong>🎫 Coût par match assisté:</strong> ${costPerAttendedMatch > 0 ? costPerAttendedMatch : 0}€</p>
                 <p><strong>📊 Répartition:</strong> ${attendedCount} matchs assistés, ${soldCount} places vendues</p>
+                <p><strong>💵 Prix moyen de vente:</strong> ${averagePrice}€</p>
+                
+                <p style="margin-top: 15px;"><strong>🏆 Par compétition:</strong></p>
+                <p style="margin-left: 10px;">🟢🟡 <strong>Ligue 1:</strong> ${ligue1Count} matchs (${ligue1Attended} assistés, ${ligue1Sold} vendus)</p>
+                <p style="margin-left: 10px;">🔵 <strong>Ligue des Champions:</strong> ${uclCount} matchs (${uclAttended} assistés, ${uclSold} vendus)</p>
+                <p style="margin-left: 10px;">🔴 <strong>Coupe de France:</strong> ${coupeCount} matchs (${coupeAttended} assistés, ${coupeSold} vendus)</p>
             `;
             
             if (netResult >= 0) {
-                analysis += '<p style="color: #059669;"><strong>🎉 Félicitations ! Votre abonnement est rentabilisé.</strong></p>';
+                analysis += '<p style="color: #059669; margin-top: 15px;"><strong>🎉 Félicitations ! Votre abonnement est rentabilisé.</strong></p>';
             } else {
-                const averageSalePrice = soldCount > 0 ? Math.round(totalRevenue / soldCount) : 100; // Prix moyen par vente réelle
-                const remainingAmount = Math.abs(netResult); // Montant restant à récupérer
-                const additionalSalesNeeded = Math.ceil(remainingAmount / averageSalePrice);
+                const remainingAmount = Math.abs(netResult);
+                const additionalSalesNeeded = averagePrice > 0 ? Math.ceil(remainingAmount / averagePrice) : 0;
                 
-                analysis += `<p style="color: #dc2626;"><strong>📊 Pour rentabiliser complètement :</strong></p>`;
+                analysis += `<p style="color: #dc2626; margin-top: 15px;"><strong>📊 Pour rentabiliser complètement :</strong></p>`;
                 analysis += `<p>• Montant restant à récupérer: <strong>${remainingAmount}€</strong></p>`;
-                analysis += `<p>• Au prix moyen de vos ventes (${averageSalePrice}€), il faudrait vendre <strong>${additionalSalesNeeded} places supplémentaires</strong></p>`;
+                if (averagePrice > 0) {
+                    analysis += `<p>• Au prix moyen de vos ventes (${averagePrice}€), il faudrait vendre <strong>${additionalSalesNeeded} places supplémentaires</strong></p>`;
+                }
                 analysis += `<p>• Ou vendre une place à <strong>${remainingAmount}€</strong> pour rentabiliser d'un coup</p>`;
             }
             
