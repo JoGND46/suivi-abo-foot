@@ -44,6 +44,25 @@
             margin: 0;
             opacity: 0.9;
         }
+        
+        /* Indicateur d'actualisation */
+        .auto-refresh-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 65, 112, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 11px;
+            z-index: 1001;
+            display: none;
+            backdrop-filter: blur(10px);
+        }
+        
+        .auto-refresh-indicator.show {
+            display: block;
+        }
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -308,6 +327,10 @@
 </head>
 <body>
     <div class="container">
+        <div class="auto-refresh-indicator" id="refreshIndicator">
+            🔄 Actualisation...
+        </div>
+        
         <div class="header">
             <h1>🔴🔵 SUIVI ABONNEMENT PSG 2024-2025</h1>
             <p>Coût initial: 1680€ | Suivi des reventes et rentabilité</p>
@@ -817,6 +840,14 @@
             }
         }
 
+        function showRefreshIndicator() {
+            const indicator = document.getElementById('refreshIndicator');
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 1000);
+        }
+
         // Chargement initial
         window.onload = function() {
             loadData();
@@ -825,6 +856,24 @@
                 updateStats();
                 updateAnalysis();
             }, 500);
+            
+            // Actualisation automatique toutes les minutes
+            setInterval(() => {
+                showRefreshIndicator();
+                updateStats();
+                updateAnalysis();
+                console.log('🔄 Actualisation automatique des statistiques - ' + new Date().toLocaleTimeString());
+            }, 60000); // 60000ms = 1 minute
+            
+            // Afficher un message de confirmation du système d'actualisation
+            setTimeout(() => {
+                const notification = document.createElement('div');
+                notification.innerHTML = '⏰ Actualisation auto activée (1 min)';
+                notification.className = 'notification';
+                notification.style.background = '#059669';
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+            }, 2000);
         };
     </script>
 </body>
